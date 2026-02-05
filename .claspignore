@@ -1,0 +1,23 @@
+# Git files
+.git/**
+.gitignore
+
+# Node modules
+node_modules/**
+package.json
+package-lock.json
+
+# Documentation
+README.md
+
+# Scripts
+setup.sh
+deploy.sh
+
+# IDE
+.vscode/**
+.idea/**
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -44,6 +44,73 @@
 
 ## セットアップ手順
 
+### 🚀 クイックスタート（clasp使用・推奨）
+
+最速でセットアップする方法です。コマンドラインから自動的にデプロイできます。
+
+#### 前提条件
+
+- Node.js と npm がインストールされていること
+- Googleアカウント
+
+#### 手順
+
+1. **claspをインストール**
+
+```bash
+npm install -g @google/clasp
+```
+
+2. **セットアップスクリプトを実行**
+
+```bash
+./setup.sh
+```
+
+このスクリプトが以下を自動実行します：
+- Googleアカウントへのログイン（初回のみ、ブラウザが開きます）
+- Google Apps Scriptプロジェクトの作成
+- ファイルのアップロード
+
+3. **Google Cloud Platformを設定**
+
+ターミナルに表示される指示に従って：
+
+a) [Google Cloud Console](https://console.cloud.google.com/)で新規プロジェクトを作成
+b) **Vertex AI API** を有効化
+c) プロジェクトIDをメモ
+
+4. **GCPプロジェクトをリンク**
+
+Google Apps Scriptエディタ（setup.sh実行後に表示されるURL）で：
+
+a) 左メニュー「プロジェクトの設定」（⚙アイコン）を開く
+b) 「Google Cloud Platform (GCP) プロジェクト」で「プロジェクトを変更」
+c) GCPプロジェクト番号を入力
+
+5. **スクリプトプロパティを設定**
+
+同じ設定画面で：
+
+a) 「スクリプト プロパティ」→「プロパティを追加」
+b) 以下を入力：
+   - プロパティ: `VERTEX_AI_PROJECT_ID`
+   - 値: `<あなたのGCPプロジェクトID>`
+
+6. **デプロイ**
+
+```bash
+./deploy.sh
+```
+
+デプロイが完了すると、WebアプリのURLが表示されます。
+
+---
+
+### 📝 手動セットアップ
+
+claspを使用せず、ブラウザから手動でセットアップする方法です。
+
 ### 1. Google Cloud Platformの設定
 
 1. [Google Cloud Console](https://console.cloud.google.com/)にアクセス
@@ -291,24 +358,42 @@ Vertex AI APIの接続テスト
 
 ### ローカル開発
 
-Google Apps Scriptはクラウドベースのため、ローカル開発には[clasp](https://github.com/google/clasp)の使用を推奨します。
+このプロジェクトはclaspに対応しています。以下のコマンドで開発を進められます：
 
 ```bash
-# claspのインストール
-npm install -g @google/clasp
+# 初回セットアップ（プロジェクト作成・ファイルアップロード）
+./setup.sh
 
-# ログイン
-clasp login
+# コードを編集後、変更をアップロード＆デプロイ
+./deploy.sh
 
-# プロジェクトをクローン
-clasp clone <スクリプトID>
+# ファイルをローカルにプル（クラウド→ローカル）
+clasp pull
 
-# ファイルをプッシュ
+# 個別にファイルをプッシュ（ローカル→クラウド）
 clasp push
 
-# ファイルをプル
-clasp pull
+# エディタをブラウザで開く
+clasp open
+
+# ログを表示
+clasp logs
+
+# 既存プロジェクトをクローン
+clasp clone <スクリプトID>
 ```
+
+#### 開発ワークフロー
+
+1. ローカルでコードを編集
+2. `./deploy.sh` を実行（自動的にpush→deploy）
+3. WebアプリのURLで動作確認
+4. 必要に応じてgitにコミット
+
+#### clasp設定ファイル
+
+- `.clasp.json` - プロジェクト情報（setup.sh実行時に自動生成）
+- `.claspignore` - GASにアップロードしないファイルを指定
 
 ### 拡張アイデア
 
