@@ -67,6 +67,12 @@ if [ -f ".clasp.json" ]; then
     rm .clasp.json
 fi
 
+# appsscript.jsonを一時的にバックアップ
+if [ -f "appsscript.json" ]; then
+    echo "appsscript.jsonをバックアップ中..."
+    mv appsscript.json appsscript.json.backup
+fi
+
 # Google Apps Scriptプロジェクトを作成
 echo ""
 echo "📦 Step 2: Google Apps Script プロジェクト作成"
@@ -74,11 +80,21 @@ echo "-------------------------------------------"
 echo "プロジェクト名: 求人広告分析ツール"
 echo ""
 
-clasp create --type webapp --title "求人広告分析ツール" --rootDir .
+clasp create --type webapp --title "求人広告分析ツール"
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ プロジェクトの作成に失敗しました${NC}"
+    # バックアップを復元
+    if [ -f "appsscript.json.backup" ]; then
+        mv appsscript.json.backup appsscript.json
+    fi
     exit 1
+fi
+
+# カスタムappsscript.jsonを復元
+if [ -f "appsscript.json.backup" ]; then
+    echo "カスタム設定を復元中..."
+    mv appsscript.json.backup appsscript.json
 fi
 
 echo -e "${GREEN}✓ プロジェクトが作成されました${NC}"
