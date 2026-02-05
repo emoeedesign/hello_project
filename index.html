@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>求人広告 応募獲得力分析</title>
+  <style>
+    /* ========== リセット & ベース ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ========== ヘッダー ========== */
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* ========== カード ========== */
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ========== 入力セクション ========== */
+    .input-section h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .input-section textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.3s;
+    }
+
+    .input-section textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .button-group {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #e0e0e0;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* ========== ローディング ========== */
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ========== 結果セクション ========== */
+    .result-section {
+      display: none;
+      animation: fadeIn 0.5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-section.visible {
+      display: block;
+    }
+
+    /* ステータスバナー */
+    .status-banner {
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .status-banner.excellent {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+    }
+
+    .status-banner.good {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+
+    .status-banner.needsImprovement {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      color: white;
+    }
+
+    .status-icon {
+      font-size: 36px;
+    }
+
+    .status-content h3 {
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+
+    .status-content p {
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    /* スコア表示 */
+    .score-display {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .score-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .score-value {
+      font-size: 42px;
+      font-weight: 700;
+    }
+
+    .score-label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* Good Points */
+    .good-points {
+      background: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+    }
+
+    .good-points h3 {
+      color: #1e40af;
+      font-size: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .good-points ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .good-points li {
+      padding: 8px 0;
+      color: #334155;
+      position: relative;
+      padding-left: 24px;
+    }
+
+    .good-points li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #3b82f6;
+      font-weight: bold;
+    }
+
+    /* 改善提案 */
+    .improvements {
+      margin-bottom: 25px;
+    }
+
+    .improvements h3 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .improvement-item {
+      background: #fff7ed;
+      border-left: 4px solid #f59e0b;
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+
+    .improvement-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      gap: 10px;
+    }
+
+    .improvement-area {
+      font-weight: 600;
+      color: #92400e;
+      font-size: 15px;
+    }
+
+    .impact-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .impact-high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .impact-medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .impact-low {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .improvement-action {
+      color: #78350f;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* 次の一手 */
+    .next-action {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .next-action h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .next-action p {
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* スコア詳細（折りたたみ） */
+    .score-details {
+      margin-bottom: 25px;
+    }
+
+    .score-details-toggle {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 12px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.3s;
+    }
+
+    .score-details-toggle:hover {
+      background: #f1f5f9;
+    }
+
+    .score-details-toggle span {
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .toggle-icon {
+      transition: transform 0.3s;
+    }
+
+    .toggle-icon.open {
+      transform: rotate(180deg);
+    }
+
+    .score-details-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .score-details-content.open {
+      max-height: 400px;
+      padding-top: 15px;
+    }
+
+    .score-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .score-item:last-child {
+      border-bottom: none;
+    }
+
+    .score-item-name {
+      color: #64748b;
+    }
+
+    .score-item-value {
+      font-weight: 600;
+      color: #334155;
+    }
+
+    /* サンプル生成ボタン */
+    .generate-sample-section {
+      text-align: center;
+      padding: 20px 0;
+      border-top: 2px dashed #e2e8f0;
+    }
+
+    /* サンプルセクション */
+    .sample-section {
+      display: none;
+      animation: fadeIn 0.5s;
+    }
+
+    .sample-section.visible {
+      display: block;
+    }
+
+    .sample-section h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .sample-content {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* エラー表示 */
+    .error-message {
+      background: #fee2e2;
+      border-left: 4px solid #dc2626;
+      padding: 15px;
+      border-radius: 8px;
+      color: #991b1b;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .error-message.visible {
+      display: block;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .improvement-header {
+        flex-direction: column;
+      }
+
+      .score-circle {
+        width: 100px;
+        height: 100px;
+      }
+
+      .score-value {
+        font-size: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- ヘッダー -->
+    <div class="header">
+      <h1>📊 求人広告 応募獲得力分析</h1>
+      <p>求人広告の魅力を可視化し、次の一手を明確にします</p>
+    </div>
+
+    <!-- 入力セクション -->
+    <div class="card input-section">
+      <h2>求人広告を入力してください</h2>
+      <textarea
+        id="jobPostingInput"
+        placeholder="求人広告のテキストを入力してください。&#10;&#10;例:&#10;【募集職種】Webエンジニア&#10;【仕事内容】自社サービスの開発...&#10;【必須スキル】JavaScript経験2年以上...&#10;【待遇】年収400万円〜..."
+      ></textarea>
+      <div class="button-group">
+        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeJobPosting()">
+          <span id="analyzeBtnText">分析開始</span>
+          <span id="analyzeBtnLoading" class="loading" style="display: none;"></span>
+        </button>
+        <button class="btn btn-secondary" onclick="clearInput()">クリア</button>
+      </div>
+      <div class="error-message" id="errorMessage"></div>
+    </div>
+
+    <!-- 結果セクション -->
+    <div class="card result-section" id="resultSection">
+      <!-- ステータスバナー -->
+      <div class="status-banner" id="statusBanner">
+        <div class="status-icon" id="statusIcon"></div>
+        <div class="status-content">
+          <h3 id="statusTitle">応募獲得力ステータス</h3>
+          <p id="statusLabel"></p>
+        </div>
+      </div>
+
+      <!-- スコア表示 -->
+      <div class="score-display">
+        <div class="score-circle">
+          <div class="score-value" id="scoreValue">--</div>
+          <div class="score-label">総合スコア</div>
+        </div>
+      </div>
+
+      <!-- Good Points -->
+      <div class="good-points">
+        <h3>👍 良いポイント</h3>
+        <ul id="goodPointsList"></ul>
+      </div>
+
+      <!-- 改善提案 -->
+      <div class="improvements">
+        <h3>💡 改善提案</h3>
+        <div id="improvementsList"></div>
+      </div>
+
+      <!-- 次の一手 -->
+      <div class="next-action">
+        <h3>🎯 次に取るべきアクション</h3>
+        <p id="nextActionText"></p>
+      </div>
+
+      <!-- スコア詳細（折りたたみ） -->
+      <div class="score-details">
+        <div class="score-details-toggle" onclick="toggleScoreDetails()">
+          <span>スコア詳細を表示</span>
+          <span class="toggle-icon" id="toggleIcon">▼</span>
+        </div>
+        <div class="score-details-content" id="scoreDetailsContent">
+          <div class="score-item">
+            <span class="score-item-name">タイトル</span>
+            <span class="score-item-value" id="scoreTitle">--</span>
+          </div>
+          <div class="score-item">
+            <span class="score-item-name">仕事内容</span>
+            <span class="score-item-value" id="scoreDescription">--</span>
+          </div>
+          <div class="score-item">
+            <span class="score-item-name">条件・待遇</span>
+            <span class="score-item-value" id="scoreConditions">--</span>
+          </div>
+          <div class="score-item">
+            <span class="score-item-name">魅力・差別化</span>
+            <span class="score-item-value" id="scoreAppeal">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- サンプル生成ボタン -->
+      <div class="generate-sample-section">
+        <button class="btn btn-primary" id="generateSampleBtn" onclick="generateSample()">
+          <span id="generateBtnText">改善サンプル原稿を生成</span>
+          <span id="generateBtnLoading" class="loading" style="display: none;"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- サンプルセクション -->
+    <div class="card sample-section" id="sampleSection">
+      <h2>📝 改善サンプル原稿</h2>
+      <div class="sample-content" id="sampleContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // グローバル変数
+    let currentAnalysisResult = null;
+    let currentJobPosting = null;
+
+    /**
+     * 求人広告を分析
+     */
+    function analyzeJobPosting() {
+      const input = document.getElementById('jobPostingInput').value.trim();
+
+      // 入力検証
+      if (!input) {
+        showError('求人広告のテキストを入力してください');
+        return;
+      }
+
+      if (input.length < 10) {
+        showError('求人広告の内容が短すぎます。もう少し詳しく入力してください。');
+        return;
+      }
+
+      // UIをローディング状態に
+      setAnalyzeLoading(true);
+      hideError();
+      hideResults();
+      currentJobPosting = input;
+
+      // バックエンドAPI呼び出し
+      google.script.run
+        .withSuccessHandler(onAnalysisSuccess)
+        .withFailureHandler(onAnalysisFailure)
+        .analyzeJobPostingAPI(input);
+    }
+
+    /**
+     * 分析成功時のコールバック
+     */
+    function onAnalysisSuccess(response) {
+      setAnalyzeLoading(false);
+
+      if (!response.success) {
+        showError(response.error || '分析に失敗しました');
+        return;
+      }
+
+      currentAnalysisResult = response.data;
+      displayResults(response.data);
+    }
+
+    /**
+     * 分析失敗時のコールバック
+     */
+    function onAnalysisFailure(error) {
+      setAnalyzeLoading(false);
+      showError('分析中にエラーが発生しました: ' + error.message);
+      console.error('Analysis error:', error);
+    }
+
+    /**
+     * 結果を表示
+     */
+    function displayResults(data) {
+      // ステータスバナー
+      const statusBanner = document.getElementById('statusBanner');
+      const statusIcon = document.getElementById('statusIcon');
+      const statusLabel = document.getElementById('statusLabel');
+
+      statusBanner.className = 'status-banner ' + data.status;
+      statusLabel.textContent = data.statusLabel;
+
+      // ステータスアイコン
+      const icons = {
+        excellent: '🌟',
+        good: '👍',
+        needsImprovement: '📈'
+      };
+      statusIcon.textContent = icons[data.status] || '📊';
+
+      // スコア
+      document.getElementById('scoreValue').textContent = data.score.total;
+      document.getElementById('scoreTitle').textContent = data.score.details.title + ' / 25';
+      document.getElementById('scoreDescription').textContent = data.score.details.description + ' / 25';
+      document.getElementById('scoreConditions').textContent = data.score.details.conditions + ' / 25';
+      document.getElementById('scoreAppeal').textContent = data.score.details.appeal + ' / 25';
+
+      // Good Points
+      const goodPointsList = document.getElementById('goodPointsList');
+      goodPointsList.innerHTML = '';
+      data.goodPoints.forEach(point => {
+        const li = document.createElement('li');
+        li.textContent = point;
+        goodPointsList.appendChild(li);
+      });
+
+      // 改善提案
+      const improvementsList = document.getElementById('improvementsList');
+      improvementsList.innerHTML = '';
+
+      if (data.improvements && data.improvements.length > 0) {
+        data.improvements.forEach(improvement => {
+          const div = document.createElement('div');
+          div.className = 'improvement-item';
+
+          const impactClass = 'impact-' + improvement.impact;
+
+          div.innerHTML = `
+            <div class="improvement-header">
+              <div class="improvement-area">${improvement.area}</div>
+              <div class="impact-badge ${impactClass}">${improvement.impactLabel}</div>
+            </div>
+            <div class="improvement-action">${improvement.action}</div>
+          `;
+
+          improvementsList.appendChild(div);
+        });
+      } else {
+        improvementsList.innerHTML = '<p style="color: #64748b;">現時点で大きな改善点は見つかりませんでした。</p>';
+      }
+
+      // 次の一手
+      document.getElementById('nextActionText').textContent = data.nextAction;
+
+      // 結果セクションを表示
+      document.getElementById('resultSection').classList.add('visible');
+
+      // スムーズスクロール
+      setTimeout(() => {
+        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+
+    /**
+     * 改善サンプルを生成
+     */
+    function generateSample() {
+      if (!currentJobPosting || !currentAnalysisResult) {
+        showError('先に求人広告を分析してください');
+        return;
+      }
+
+      // UIをローディング状態に
+      setGenerateLoading(true);
+      hideSample();
+
+      // バックエンドAPI呼び出し
+      google.script.run
+        .withSuccessHandler(onSampleSuccess)
+        .withFailureHandler(onSampleFailure)
+        .generateSampleAPI(currentJobPosting, currentAnalysisResult);
+    }
+
+    /**
+     * サンプル生成成功時のコールバック
+     */
+    function onSampleSuccess(response) {
+      setGenerateLoading(false);
+
+      if (!response.success) {
+        showError(response.error || 'サンプル生成に失敗しました');
+        return;
+      }
+
+      document.getElementById('sampleContent').textContent = response.data.sample;
+      document.getElementById('sampleSection').classList.add('visible');
+
+      // スムーズスクロール
+      setTimeout(() => {
+        document.getElementById('sampleSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+
+    /**
+     * サンプル生成失敗時のコールバック
+     */
+    function onSampleFailure(error) {
+      setGenerateLoading(false);
+      showError('サンプル生成中にエラーが発生しました: ' + error.message);
+      console.error('Sample generation error:', error);
+    }
+
+    /**
+     * スコア詳細の折りたたみ切り替え
+     */
+    function toggleScoreDetails() {
+      const content = document.getElementById('scoreDetailsContent');
+      const icon = document.getElementById('toggleIcon');
+
+      content.classList.toggle('open');
+      icon.classList.toggle('open');
+    }
+
+    /**
+     * 入力をクリア
+     */
+    function clearInput() {
+      document.getElementById('jobPostingInput').value = '';
+      hideError();
+      hideResults();
+      hideSample();
+      currentAnalysisResult = null;
+      currentJobPosting = null;
+    }
+
+    /**
+     * エラーメッセージを表示
+     */
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+      errorDiv.classList.add('visible');
+    }
+
+    /**
+     * エラーメッセージを非表示
+     */
+    function hideError() {
+      document.getElementById('errorMessage').classList.remove('visible');
+    }
+
+    /**
+     * 結果セクションを非表示
+     */
+    function hideResults() {
+      document.getElementById('resultSection').classList.remove('visible');
+    }
+
+    /**
+     * サンプルセクションを非表示
+     */
+    function hideSample() {
+      document.getElementById('sampleSection').classList.remove('visible');
+    }
+
+    /**
+     * 分析ボタンのローディング状態を設定
+     */
+    function setAnalyzeLoading(loading) {
+      const btn = document.getElementById('analyzeBtn');
+      const text = document.getElementById('analyzeBtnText');
+      const loadingSpinner = document.getElementById('analyzeBtnLoading');
+
+      btn.disabled = loading;
+      text.textContent = loading ? '分析中...' : '分析開始';
+      loadingSpinner.style.display = loading ? 'inline-block' : 'none';
+    }
+
+    /**
+     * サンプル生成ボタンのローディング状態を設定
+     */
+    function setGenerateLoading(loading) {
+      const btn = document.getElementById('generateSampleBtn');
+      const text = document.getElementById('generateBtnText');
+      const loadingSpinner = document.getElementById('generateBtnLoading');
+
+      btn.disabled = loading;
+      text.textContent = loading ? '生成中...' : '改善サンプル原稿を生成';
+      loadingSpinner.style.display = loading ? 'inline-block' : 'none';
+    }
+
+    // Enterキーで分析実行（Shift+Enterは改行）
+    document.addEventListener('DOMContentLoaded', function() {
+      const textarea = document.getElementById('jobPostingInput');
+      textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+          e.preventDefault();
+          analyzeJobPosting();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
